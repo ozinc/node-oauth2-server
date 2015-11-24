@@ -122,6 +122,26 @@ describe('AuthCodeGrant', function() {
       .expect(400, /redirect_uri does not match/i, done);
   });
 
+  it('should allow redirect_uri to be any of {localhost, 127.0.0.1}', function (done) {
+    var app = bootstrap({
+      getClient: function (clientId, clientSecret, callback) {
+        callback(false, {
+          clientId: 'thom',
+          redirectUri: 'http://nightworld.com'
+        });
+      }
+    });
+
+    request(app)
+    .post('/authorise')
+    .send({
+      response_type: 'code',
+      client_id: 'thom',
+      redirect_uri: 'http://localhost:8080/heheh'
+    })
+    .expect(302, /Moved temporarily/i, done);
+  });
+
   it('should detect mismatching redirect_uri within an array', function (done) {
     var app = bootstrap({
       getClient: function (clientId, clientSecret, callback) {
