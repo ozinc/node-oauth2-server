@@ -122,24 +122,35 @@ describe('AuthCodeGrant', function() {
       .expect(400, /redirect_uri does not match/i, done);
   });
 
-  it('should allow redirect_uri to be any of {localhost, 127.0.0.1}', function (done) {
+  it('should accept valid request and return code and state using GET', function (done) {
+    var code;
+
     var app = bootstrap({
       getClient: function (clientId, clientSecret, callback) {
         callback(false, {
           clientId: 'thom',
           redirectUri: 'http://nightworld.com'
         });
+      },
+      saveAuthCode: function (authCode, clientId, expires, user, x, callback) {
+        should.exist(authCode);
+        code = authCode;
+        callback();
       }
-    });
+    }, [false, true]);
 
     request(app)
-    .post('/authorise')
-    .send({
+    .get('/authorise')
+    .query({
       response_type: 'code',
       client_id: 'thom',
-      redirect_uri: 'http://localhost:8080/heheh'
+      redirect_uri: 'http://localhost:3000/dog',
+      state: 'some_state'
     })
-    .expect(302, /Moved temporarily/i, done);
+    .expect(302, function (err, res) {
+      res.header.location.should.equal('http://localhost:3000/dog?code=' + code  + '&state=some_state');
+      done();
+    });
   });
 
   it('should detect mismatching redirect_uri within an array', function (done) {
